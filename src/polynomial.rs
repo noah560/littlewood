@@ -52,7 +52,7 @@ pub fn solve_all<const N: usize>(
         Complex::from_f32(0.0, 0.0); N
     ];
     for i in 0..N {
-        guesses[N] = solve(
+        guesses[i] = solve(
             coefficients,
             iterations,
         );
