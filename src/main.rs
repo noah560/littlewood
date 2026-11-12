@@ -6,7 +6,7 @@ mod complex;
 use complex::Complex;
 use rayon::prelude::*;
 
-const POLYNOMIAL_SIZE: usize = 10;
+const POLYNOMIAL_SIZE: usize = 12;
 const RESOLUTION: usize = 3200;
 const BATCH_SIZE: usize = 1024;
 
