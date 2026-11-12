@@ -14,7 +14,7 @@ fn solve_polynomial(
     iterations_per_degree: usize,
     allowed_coefficients: &[Complex],
     iteration: usize,
-) -> [Option<(usize, u8, u8, u8)>; POLYNOMIAL_SIZE - 1] {
+) -> Option<(usize, u8, u8, u8)> {
     // Get the relevant coefficients
     let mut coefficients: [Complex; POLYNOMIAL_SIZE] = [
         Complex::from((0.0, 0.0)); POLYNOMIAL_SIZE
@@ -28,39 +28,26 @@ fn solve_polynomial(
     // Get the color
     let color: (u8, u8, u8) = get_color(iteration / iterations_per_degree);
     // Solve the equation
-    let solutions_complex: [Complex; POLYNOMIAL_SIZE - 1] =
-        polynomial::solve_all::<{POLYNOMIAL_SIZE - 1}>(
-            &coefficients,
-            128
-        );
-    let mut solutions: [Option<(usize, u8, u8, u8)>; POLYNOMIAL_SIZE - 1] = [
-        None; POLYNOMIAL_SIZE - 1
-    ];
-    for i in 0..(POLYNOMIAL_SIZE - 1) {
-        let solution: (f32, f32) = solutions_complex[i].into();
-        if solution.0 <= -2.0 || solution.0 >= 2.0 || solution.1 <= -2.0 || solution.1 >= 2.0 {
-            continue;
-        }
-        let pixel: (usize, usize) = (
-            (solution.0 * (RESOLUTION as f32) / 4.0 + (RESOLUTION as f32) / 2.0) as usize,
-            ((RESOLUTION as f32) / 2.0 - solution.1 * (RESOLUTION as f32) / 4.0) as usize,
-        );
-        let pixel_id: usize = pixel.1 * RESOLUTION * 4 + pixel.0 * 4;
-        solutions[i] = Some((
-            pixel_id,
-            color.0,
-            color.1,
-            color.2,
-        ));
+    let solution: (f32, f32) = polynomial::solve(
+        &coefficients,
+        32
+    ).into();
+    if solution.0 <= -2.0 || solution.0 >= 2.0 || solution.1 <= -2.0 || solution.1 >= 2.0 {
+        return None;
     }
-    solutions
+    let pixel: (usize, usize) = (
+        (solution.0 * (RESOLUTION as f32) / 4.0 + (RESOLUTION as f32) / 2.0) as usize,
+        ((RESOLUTION as f32) / 2.0 - solution.1 * (RESOLUTION as f32) / 4.0) as usize,
+    );
+    let pixel_id: usize = pixel.1 * RESOLUTION * 4 + pixel.0 * 4;
+    Some((pixel_id, color.0, color.1, color.2))
 }
 
 fn solve_polynomials(
     iterations_per_degree: usize,
     allowed_coefficients: &[Complex],
     iterations: &[usize],
-    results: &mut [[Option<(usize, u8, u8, u8)>; POLYNOMIAL_SIZE - 1]],
+    results: &mut [Option<(usize, u8, u8, u8)>],
 ) {
     results.par_iter_mut().zip(iterations).for_each(|(result, &iteration)| {
         *result = solve_polynomial(
@@ -119,23 +106,21 @@ fn main() {
             for i in 0..BATCH_SIZE {
                 iterations[i] = batch * BATCH_SIZE + i;
             }
-            let mut results: [[Option<(usize, u8, u8, u8)>; POLYNOMIAL_SIZE - 1]; BATCH_SIZE] = [[None; POLYNOMIAL_SIZE - 1]; BATCH_SIZE];
+            let mut results: [Option<(usize, u8, u8, u8)>; BATCH_SIZE] = [None; BATCH_SIZE];
             solve_polynomials(
                 iterations_per_degree,
                 &allowed_coefficients,
                 &iterations,
                 &mut results,
             );
-            for &result in &results {
-                for root in result {
-                    match root {
-                        Some((index, r, g, b)) => {
-                            framebuffer[index + 0] = r;
-                            framebuffer[index + 1] = g;
-                            framebuffer[index + 2] = b;
-                        },
-                        _ => {}
-                    }
+            for &root in &results {
+                match root {
+                    Some((index, r, g, b)) => {
+                        framebuffer[index + 0] = r;
+                        framebuffer[index + 1] = g;
+                        framebuffer[index + 2] = b;
+                    },
+                    _ => {}
                 }
             }
         }
