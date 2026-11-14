@@ -6,8 +6,8 @@ mod complex;
 use complex::Complex;
 use rayon::prelude::*;
 
-const POLYNOMIAL_SIZE: usize = 10;
-const RESOLUTION: usize = 3200;
+const POLYNOMIAL_SIZE: usize = 14;
+const RESOLUTION: usize = 6400;
 const BATCH_SIZE: usize = 1024;
 
 fn solve_polynomial(
@@ -26,7 +26,9 @@ fn solve_polynomial(
         remaining /= allowed_coefficients.len();
     }
     // Get the color
-    let color: (u8, u8, u8) = get_color(iteration / iterations_per_degree);
+    let color: (u8, u8, u8) = get_color(
+        (iteration / iterations_per_degree + 240) % 360
+    );
     // Solve the equation
     let solutions_complex: [Complex; POLYNOMIAL_SIZE - 1] =
         polynomial::solve_all::<{POLYNOMIAL_SIZE - 1}>(
@@ -104,6 +106,9 @@ fn main() {
         Complex::from((1.0, 0.0)),
         Complex::from((0.0, -1.0)),
     ];
+    for i in 0..12 {
+        allowed_coefficients[1] = allowed_coefficients[1] + Complex::from((-0.05, 0.025));
+    }
     for frame in 0..60 {
         let mut framebuffer: Vec<u8> = vec![0; RESOLUTION * RESOLUTION * 4];
         // Set alpha values to 255
@@ -149,6 +154,6 @@ fn main() {
         );
         println!("Generated frame {}!", frame);
         // Change coefficients for the animation
-        allowed_coefficients[1] = allowed_coefficients[1] + Complex::from((-0.05, 0.05));
+        allowed_coefficients[1] = allowed_coefficients[1] + Complex::from((-0.05, 0.025));
     }
 }
